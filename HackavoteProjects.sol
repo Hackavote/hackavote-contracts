@@ -4,36 +4,57 @@ pragma solidity ^0.8.4;
 contract HackavoteProjects {
     struct Project {
         address author;
-        string infoUri;
-        string metaDataUri;
+        address donationAddress;
+        string submissionInfoUrl;
+        string socialMediaUrl;
     }
+
     address private admin;
     Project[] public projects;
     uint256 public deadline;
 
-    event ProjectSubmitted(address indexed author, string metaDataUri);
-    event MetaDataUriChanged(uint256 indexed index, string newMetaDataUri);
-    event InfoUriChanged(uint256 indexed index, string newInfoUri); // event for changeInfoUri
+    event ProjectSubmitted(address indexed author);
+    event SubmissionInfoUrlChanged(
+        uint256 indexed index,
+        string newSubmissionInfoUrl
+    );
+    event ProjectTransferred(
+        uint256 indexed projectId,
+        address from,
+        address to
+    );
+    event DonationAddressChanged(
+        uint256 indexed projectId,
+        address newDonationAddress
+    );
+    event SocialMediaUrlChanged(
+        uint256 indexed projectId,
+        string newSocialMediaUrl
+    );
 
     constructor(uint256 _deadline) {
         admin = msg.sender;
         deadline = _deadline;
     }
 
-    /// @notice allows users to submit a new project before the deadline
-    function submitProject(string memory _infoUrl, string memory _metaDataUri)
-    external
-    beforeDeadline
-    {
-        projects.push(Project(msg.sender, _infoUrl, _metaDataUri));
-        emit ProjectSubmitted(msg.sender, _metaDataUri);
+    function submitProject(
+        string memory _submissionInfoUrl,
+        address _donationAddress,
+        string memory _socialMediaUrl
+    ) external beforeDeadline {
+        projects.push(
+            Project(
+                msg.sender,
+                _donationAddress,
+                _submissionInfoUrl,
+                _socialMediaUrl
+            )
+        );
+        emit ProjectSubmitted(msg.sender);
     }
 
-    modifier onlyAdminOrAuthor(uint256 _index) {
-        require(
-            msg.sender == admin || msg.sender == projects[_index].author,
-            "Not authorized"
-        );
+    modifier onlyAuthor(uint256 _index) {
+        require(msg.sender == projects[_index].author, "Not authorized");
         _;
     }
 
@@ -42,26 +63,42 @@ contract HackavoteProjects {
         _;
     }
 
-    /// @notice allows the project author or the admin to change the metadata URI
-    function changeMetaDataUri(uint256 _index, string memory _newMetaDataUri)
-    external
-    onlyAdminOrAuthor(_index)
-    {
-        projects[_index].metaDataUri = _newMetaDataUri;
-        emit MetaDataUriChanged(_index, _newMetaDataUri);
+    function changeSubmissionInfoUrl(
+        uint256 _index,
+        string memory _newSubmissionInfoUrl
+    ) external onlyAuthor(_index) beforeDeadline {
+        projects[_index].submissionInfoUrl = _newSubmissionInfoUrl;
+        emit SubmissionInfoUrlChanged(_index, _newSubmissionInfoUrl);
     }
 
-    /// @notice allows the project author or the admin to change the info URI
-    function changeInfoUri(uint256 _index, string memory _newInfoUri)
-    external
-    onlyAdminOrAuthor(_index)
-    beforeDeadline
-    {
-        projects[_index].infoUri = _newInfoUri;
-        emit InfoUriChanged(_index, _newInfoUri); // emit event here
+    function changeDonationAddress(
+        uint256 _projectId,
+        address _newDonationAddress
+    ) external onlyAuthor(_projectId) {
+        projects[_projectId].donationAddress = _newDonationAddress;
+        emit DonationAddressChanged(_projectId, _newDonationAddress);
     }
 
-    /// @notice returns the number of projects submitted
+    function changeSocialMediaUrl(
+        uint256 _projectId,
+        string memory _newSocialMediaUrl
+    ) external onlyAuthor(_projectId) {
+        projects[_projectId].socialMediaUrl = _newSocialMediaUrl;
+        emit SocialMediaUrlChanged(_projectId, _newSocialMediaUrl);
+    }
+
+    function transferProject(uint256 _projectId, address _newAuthor)
+    external
+    onlyAuthor(_projectId)
+    {
+        emit ProjectTransferred(
+            _projectId,
+            projects[_projectId].author,
+            _newAuthor
+        );
+        projects[_projectId].author = _newAuthor;
+    }
+
     function getProjectsLength() external view returns (uint256) {
         return projects.length;
     }
