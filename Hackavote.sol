@@ -12,8 +12,9 @@ contract Hackavote {
         opinions[msg.sender].push(opinion);
     }
 
-    function getOpinionsOfHacker(address hackerAddress) public view returns (bytes[] memory) {
-        return opinions[hackerAddress];
+    function getOpinionOfHackerAtIndex(address hackerAddress, uint index) public view returns (bytes memory) {
+        require(index < opinions[hackerAddress].length, "Index out of bounds.");
+        return opinions[hackerAddress][index];
     }
 
     function getOpinionCountOfHacker(address hackerAddress) public view returns (uint) {
